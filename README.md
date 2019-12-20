@@ -5,6 +5,26 @@ You are expected to be able to run a few commands from the command line. You
 have a working version of python2/3 on your path or know how to run the
 python interpreter another way.
 
+# Run the experiment
+Make sure you have installed the experiment (see Install experiment below).
+
+Open a terminal and change to the directory, that contains the python script
+test.py.
+
+You can navigate to the folder with a file explorer (nautilus or
+dolphin). Right click somewhere in the folder and look for some option
+that tells roughly: "open a terminal here".
+
+Activate the virtual environment.
+
+- source venv2/bin/activate
+
+run the experiment:
+
+- python test.py
+
+And off you go.
+
 # Install experiment
 
 install source tree:
