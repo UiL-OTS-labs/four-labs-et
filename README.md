@@ -2,7 +2,8 @@
 
 # Requirements
 You are expected to be able to run a few commands from the command line. You
-have a working version of python2/3 on your path or know how to run the
+have a working version of python2 (unfortunately some of the dependencies don't
+work with python3) on your path or know how to run the
 python interpreter another way.
 
 # Run the experiment
@@ -35,10 +36,10 @@ Change to the cloned directory
 
 - cd four-labs-et
 
-Create virtual python environment (use --site-packages in order to obtain pylink
-from the system environment)
+Create virtual python environment (use --system-site-packages in order to obtain
+pylink from the system environment)
 
-virtualenv venv2 --site-packages
+- virtualenv venv2 --system-site-packages
 
 Activate the environment. Prior to the the next command your terminal prompt
 looks roughly like:
