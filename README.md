@@ -58,3 +58,10 @@ First upgrade pip (from the venv)
 install packages
 
 - pip install numpy pillow pygame python-pygaze
+
+# Install stimuli
+After you have installed the neccessary packages and the experiment, you still
+need to install the stimuli. The stimuli are still considered to sensitive in
+order to store them in a public git repository. You need to copy the folders
+"frames" and "stimuli" to the project root, the folder in which the experiment
+"test.py" is located.
