@@ -51,6 +51,10 @@ def infant_calibration(x, y):
 
 # # # # #
 # experiment setup
+ppn = int(input("PP number?"))
+LOG = "output/PP" + str(ppn)
+LOGFILE = "output/PP" + str(ppn)
+
 # keyboard
 kb = libinput.Keyboard(timeout=2000)
 
@@ -58,11 +62,11 @@ kb = libinput.Keyboard(timeout=2000)
 disp = libscreen.Display()
 
 # create eyetracker object
-tracker = eyetracker.EyeTracker(disp)
+tracker = eyetracker.EyeTracker(disp, eyedatafile=LOG)
 tracker.set_draw_calibration_target_func(infant_calibration)
 
 # Logfile
-log = liblog.Logfile()
+log = liblog.Logfile(filename = LOG)
 
 # screen size and white box (wb) locations
 dispx = constants.DISPSIZE[0]
@@ -75,13 +79,13 @@ ya = (dispy - wb)/2
 							
 # create screens
 # attention grabber screen
-surface = pygame.image.load('stimuli/diamond2.png').convert()
+attention = os.listdir('stimuli/attention')
+surface = {}
+ii = 0
+for i in attention:
+	surface[ii] = pygame.image.load('stimuli/attention/' + i).convert()
+	ii += 1
 
-#rotations = []
-#for angle in range(73):
-#	rotations.append(pygame.transform.rotate(surface, angle))
-#	
-# load auditory stimuli
 attractor_sound = libsound.Sound(soundfile = 'stimuli/auditory stim/attractor.wav')
 
 
@@ -114,23 +118,6 @@ bgscr.draw_image(bg)
 
 calscr = libscreen.Screen()
 calscr.draw_text('press ESC to recalibrate')
-
-## original stimuli screens
-##orim = []
-##reward = {}
-##files = os.listdir('frames')
-##for i in range(6):
-##	reward[i] = {}
-##	orim.append(i) 
-##	orim[i] = []
-##	f = os.listdir('frames/'+ files[i])
-##	f.sort()
-##	ii = 0
-##	for frame in f:
-##		orim[i].append(pygame.image.load('frames/'+ files[i] + '/' + frame).convert())
-##		reward[i][ii] = libscreen.Screen()
-##		reward[i][ii].draw_image(orim[i][ii])
-##		ii += 1
 
 files = os.listdir('frames')
 
@@ -221,7 +208,7 @@ iright = [1, 3, 5]
 triplet_order = numpy.random.randint(0, 2, 1)
 
 # randomize left right order
-if numpy.random.randint(0, 2, 1) == 0:
+if (ppn % 2) == 0:
 	left = True
 else:
 	left = False
@@ -276,26 +263,38 @@ for trial in range(36):
 	tracker.log("start %d" % (libtime.clock.get_time()))
 
 	# present attention getter
-	scale = .01
+	scale = 1.2
 	count = 0
+	ii = 0
 	attractor_sound.play()
 	bgscr.clear()
 	bgscr.draw_image(bg)
-	bgscr.draw_image(surface, scale = scale)
+	bgscr.draw_image(surface[ii], scale = scale)
 	disp.fill(bgscr)
-	disp.show()
+	atc = disp.show()
 
 	t00 = libtime.clock.get_time()
 	while (libtime.clock.get_time() - t00) < 400:
-		scale += .0025
-		bgscr.draw_image(surface, scale = scale)
+		if (libtime.clock.get_time() - atc) > 250:
+			atc = libtime.clock.get_time()
+			if ii == 7:
+				ii = 0
+			else:
+				ii += 1
+		bgscr.draw_image(surface[ii], scale = scale)
 		disp.fill(bgscr)
 		disp.show()
 
 	inattention = True
 	while inattention:
-		#scale += .001
-		bgscr.draw_image(surface, scale = scale)
+		if (libtime.clock.get_time() - atc) > 250:
+			atc = libtime.clock.get_time()
+			if ii == 7:
+				ii = 0
+			else:
+				ii += 1
+
+		bgscr.draw_image(surface[ii], scale = scale)
 		disp.fill(bgscr)
 		disp.show()
 		pos = tracker.sample()
@@ -311,25 +310,12 @@ for trial in range(36):
 				tracker.log_var('EVENT', 'start %d' % trial)
 				tracker.log_var('EVENT_TIME', '%d' % libtime.clock.get_time())
 													
-		if (t0 - t00) > 1500:
-			attractor_sound.play()
-			bgscr.clear()
-			bgscr.draw_image(bg)
-			scale = .01
-			bgscr.draw_image(surface, scale = scale)
-			disp.fill(bgscr)
-			disp.show()
-			
+		if (t0 - t00) > 2000:
 			t00 = libtime.clock.get_time()
-			while (libtime.clock.get_time() - t00) < 400:
-				scale += .0025
-				bgscr.draw_image(surface, scale = scale)
-				disp.fill(bgscr)
-				disp.show()
-				
-			#t00 = libtime.clock.get_time()
+			attractor_sound.play()
 			inattention = True
 			count += 1
+
 		if count == 5:
 			tracker.stop_recording()
 			key, time = kb.get_key()
@@ -337,21 +323,26 @@ for trial in range(36):
                                 tracker.close()
                                 log.close()
                                 disp.close()
-			
-                        disp.fill(calscr)
-                        disp.show()
-                        key, time = kb.get_key()
-                        while key == 'escape':
-                                tracker.calibrate()
+			else:
                                 disp.fill(calscr)
                                 disp.show()
                                 key, time = kb.get_key()
-			tracker.start_recording()
-			count = 0
+                                while key == 'escape':
+                                        tracker.calibrate()
+                                        disp.fill(calscr)
+                                        disp.show()
+                                        key, time = kb.get_key()
+                                tracker.start_recording()
+                                count = 0
 
 	# anticipation and cue period
+	bgscr.clear()	
+	bgscr.draw_image(bg)
+	disp.fill(bgscr)
+	t00 = disp.show()
+	start_time = t00
+	an_time = 0
 	#play sounds
-	t00 = libtime.clock.get_time()
 	while (libtime.clock.get_time() - t00) < 1:
 		tri_sounds[triplet_order][block_trial].play()
 
@@ -385,19 +376,12 @@ for trial in range(36):
 					rt = (t1 - t00) - 1800
 		time = libtime.clock.get_time() - t00
 		if time > 1699:
-			# remove star when triplets end
-			bgscr.clear()	
-			bgscr.draw_image(bg)
-			disp.fill(bgscr)
-			disp.show()
+			if an_time == 0:
+				an_time = libtime.clock.get_time()
 
 	# reward period
 	t00 = libtime.clock.get_time()
-#	bgscr.clear()	
-#	bgscr.draw_image(bg)
-#	disp.fill(bgscr)
-#	disp.show()
-	
+	rw_time = t00
 	ii = numpy.random.randint(0,3,1)
 	if left:
 		iindex = ileft
@@ -419,17 +403,18 @@ for trial in range(36):
 			k += 1
 			disp.fill(reward[iindex[ii]][k])
 			ft = disp.show()
-			libtime.clock.pause(40)
+			libtime.clock.pause(38)
 	
+	end_time = libtime.clock.get_time()
+	tracker.stop_recording()
+
 	# prepare for next trial with background screen
 	disp.fill(bgscr)
 	disp.show()
 
 	# log stuff
-	log.write([trial + 1, left, pos, anticipation, rt, triplets[triplet_order][block_trial], puppets[ii]])
+	log.write([trial + 1, left, pos, anticipation, rt, triplets[triplet_order][block_trial], puppets[ii], start_time, an_time, rw_time, end_time])
 	block_trial += 1
-	
-	tracker.stop_recording()
 
 # end the experiment
 tracker.close()
